@@ -1,3 +1,4 @@
+from datetime import date
 from bs4 import BeautifulSoup
 import requests
 import re
@@ -14,8 +15,16 @@ def get_titles_from_search_results(filename):
 
     [('Book title 1', 'Author 1'), ('Book title 2', 'Author 2')...]
     """
-
-    pass
+    with open (filename) as f:
+        data=f.read()
+    soup=BeautifulSoup(data,'html.parser')
+    book_name_tags=soup.find_all('a',{'class':'bookTitle'})
+    author_name_tags=soup.find_all('a',{'class':'authorName'})
+    d={}
+    for i in range (len(book_name_tags)):
+        d[book_name_tags[i].text.strip()]=author_name_tags[i].text.strip()
+    return list(d.items())
+    
 
 
 def get_search_links():
@@ -32,7 +41,15 @@ def get_search_links():
 
     """
 
-    pass
+    url="https://www.goodreads.com/search?q=fantasy&qid=NwUsLiA2Nc"
+    r = requests.get(url)
+    final = []
+    soup=BeautifulSoup(r.content,'html.parser')
+    link_tags=soup.find_all('a',{'class':'bookTitle'})
+    for i in link_tags[:10]:
+        link =  'https://www.goodreads.com'+i.get('href',None)
+        final.append(link)
+    return final
 
 
 def get_book_summary(book_url):
@@ -48,8 +65,13 @@ def get_book_summary(book_url):
     You can easily capture CSS selectors with your browser's inspector window.
     Make sure to strip() any newlines from the book title and number of pages.
     """
+    r = requests.get(book_url)
+    soup=BeautifulSoup(r.content,'html.parser')
+    title=soup.find('h1',{'id':'bookTitle'}).text.strip()
+    author=soup.find('span',{'itemprop':'name'}).text.strip()
+    page_number=soup.find('span',{'itemprop':'numberOfPages'}).text.strip()
 
-    pass
+    return (title,author,page_number)
 
 
 def summarize_best_books(filepath):
@@ -63,9 +85,21 @@ def summarize_best_books(filepath):
     ("Fiction", "The Testaments (The Handmaid's Tale, #2)", "https://www.goodreads.com/choiceawards/best-fiction-books-2020") 
     to your list of tuples.
     """
-    pass
+    with open(filepath) as f:
+        data=f.read()
+    soup=BeautifulSoup(data,'html.parser')
+    categories=soup.find_all('h4',{'class':'category__copy'})
+    titles_and_links=soup.find_all('img',{'class':'category__winnerImage'})
+    final = []
+    for i in range (len(categories)):
+        category = categories[i].text.strip()
+        title = titles_and_links[i].get('alt',None)
+        link = titles_and_links[i].get('src',None)
+        link='https://www.goodreads.com/'+link[2:]
+        tup=(category,title,link)
+        final.append(tup)
 
-
+    return final
 def write_csv(data, filename):
     """
     Write a function that takes in a list of tuples (called data, i.e. the
@@ -86,7 +120,13 @@ def write_csv(data, filename):
 
     This function should not return anything.
     """
-    pass
+    with open(filename,'w') as f:
+        csv_writer=csv.writer(f)
+        csv_writer.writerow(['Book title','Author Name'])
+        for i in data:
+            book_name=i[0]
+            author_name=i[1]
+            csv_writer.writerow([book_name,author_name])
 
 
 def extra_credit(filepath):
@@ -101,9 +141,10 @@ def extra_credit(filepath):
 class TestCases(unittest.TestCase):
 
     # call get_search_links() and save it to a static variable: search_urls
-
+    search_urls=get_search_links()
 
     def test_get_titles_from_search_results(self):
+        get_titles_from_search_results('search_results.htm')
         # call get_titles_from_search_results() on search_results.htm and save to a local variable
 
         # check that the number of titles extracted is correct (20 titles)
@@ -117,6 +158,7 @@ class TestCases(unittest.TestCase):
         # check that the last title is correct (open search_results.htm and find it)
 
     def test_get_search_links(self):
+        pass
         # check that TestCases.search_urls is a list
 
         # check that the length of TestCases.search_urls is correct (10 URLs)
@@ -127,6 +169,7 @@ class TestCases(unittest.TestCase):
 
 
     def test_get_book_summary(self):
+        get_book_summary(self.search_urls[0])
         # create a local variable – summaries – a list containing the results from get_book_summary()
         # for each URL in TestCases.search_urls (should be a list of tuples)
 
@@ -144,6 +187,7 @@ class TestCases(unittest.TestCase):
 
 
     def test_summarize_best_books(self):
+        summarize_best_books('best_books_2020.htm')
         # call summarize_best_books and save it to a variable
 
         # check that we have the right number of best books (20)
@@ -158,6 +202,7 @@ class TestCases(unittest.TestCase):
 
 
     def test_write_csv(self):
+        write_csv(get_titles_from_search_results('search_results.htm'),'test.csv')
         # call get_titles_from_search_results on search_results.htm and save the result to a variable
 
         # call write csv on the variable you saved and 'test.csv'
@@ -176,7 +221,7 @@ class TestCases(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    print(extra_credit("extra_credit.htm"))
+    # print(extra_credit("extra_credit.htm"))
     unittest.main(verbosity=2)
 
 
