@@ -88,7 +88,7 @@ def summarize_best_books(filepath):
     ("Fiction", "The Testaments (The Handmaid's Tale, #2)", "https://www.goodreads.com/choiceawards/best-fiction-books-2020") 
     to your list of tuples.
     """
-    with open(filepath) as f:
+    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), filepath), 'r') as f:
         data = f.read()
     soup = BeautifulSoup(data, 'html.parser')
     categories = soup.find_all('h4', {'class': 'category__copy'})
@@ -142,7 +142,13 @@ def extra_credit(filepath):
     Please see the instructions document for more information on how to complete this function.
     You do not have to write test cases for this function.
     """
-    pass
+    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), filepath), 'r') as f:
+        data = f.read()
+    soup = BeautifulSoup(data, 'html.parser')
+    describe = soup.find('span', {'id': 'freeText4791443123668479528'}).text
+    regex = r'(\b[A-Z]\w+( [A-Z]\w+)+\b)'
+    word_list = re.findall(regex, describe)
+    return word_list
 
 
 class TestCases(unittest.TestCase):
@@ -161,7 +167,7 @@ class TestCases(unittest.TestCase):
 
         # check that each item in the list is a tuple
         for i in search_title_list:
-            self.assertEqual(type(i), tuple)
+            self.assertIsInstance(i, tuple)
         # check that the first book and author tuple is correct (open search_results.htm and find it)
         self.assertEqual(search_title_list[0],
                          ('Harry Potter and the Deathly Hallows (Harry Potter, #7)', 'J.K. Rowling'))
@@ -173,9 +179,10 @@ class TestCases(unittest.TestCase):
         self.assertIsInstance(self.search_urls, list)
         # check that the length of TestCases.search_urls is correct (10 URLs)
         self.assertEqual(len(self.search_urls), 10)
-        # check that each URL in the TestCases.search_urls is a string
+
         regex = "/book/show/"
         for i in self.search_urls:
+            # check that each URL in the TestCases.search_urls is a string
             self.assertIsInstance(i, str)
             # check that each URL contains the correct url for Goodreads.com followed by /book/show/
             self.assertTrue(re.search(regex, i))
@@ -189,8 +196,9 @@ class TestCases(unittest.TestCase):
             summaries.append(get_book_summary(link))
         # check that the number of book summaries is correct (10)
         self.assertEqual(len(summaries), 10)
-        # check that each item in the list is a tuple
+
         for item in summaries:
+            # check that each item in the list is a tuple
             self.assertIsInstance(item, tuple)
             # check that each tuple has 3 elements
             self.assertEqual(len(item), 3)
@@ -242,5 +250,6 @@ class TestCases(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    # print(extra_credit("extra_credit.htm"))
+    print(extra_credit("extra_credit.htm"))
+    print(len(extra_credit("extra_credit.htm")))
     unittest.main(verbosity=2)
